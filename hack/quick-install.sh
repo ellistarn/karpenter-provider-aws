@@ -55,6 +55,7 @@ apply() {
     --atomic
   helm upgrade --install karpenter karpenter/karpenter \
     --version 0.1.2 \
+    --create-namespace --namespace karpenter \
     --atomic
 }
 
