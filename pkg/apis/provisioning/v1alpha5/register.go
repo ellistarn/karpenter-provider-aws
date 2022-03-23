@@ -34,8 +34,8 @@ var (
 	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: "v1alpha5"}
 	SchemeBuilder      = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(SchemeGroupVersion,
-			&Provisioner{},
-			&ProvisionerList{},
+			&Provisioner{}, &ProvisionerList{},
+			&NodeGroup{}, &NodeGroupList{},
 		)
 		metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 		return nil

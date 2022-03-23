@@ -42,7 +42,7 @@ podSecurityContext:
 # -- PriorityClass name for the pod.
 priorityClassName: system-cluster-critical
 # -- Override the default termination grace period for the pod.
-terminationGracePeriodSeconds:
+terminationGracePeriodSeconds: 1
 # -- Bind the pod to the host network.
 # This is required when using a custom CNI.
 hostNetwork: false

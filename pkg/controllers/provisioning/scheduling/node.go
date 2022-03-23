@@ -52,7 +52,7 @@ func NewNode(constraints *v1alpha5.Constraints, instanceTypeOptions []cloudprovi
 	return n
 }
 
-func (n Node) Compatible(pod *v1.Pod) error {
+func (n *Node) Compatible(pod *v1.Pod) error {
 	if n.unschedulable {
 		return errors.New("node is unschedulable")
 	}
@@ -89,7 +89,7 @@ func (n *Node) Add(pod *v1.Pod) {
 }
 
 // hasCompatibleResources tests if a given node selector and resource request list is compatible with an instance type
-func (n Node) hasCompatibleResources(resourceList v1.ResourceList, it cloudprovider.InstanceType) bool {
+func (n *Node) hasCompatibleResources(resourceList v1.ResourceList, it cloudprovider.InstanceType) bool {
 	for name, quantity := range resourceList {
 		// we don't care if the pod is requesting zero quantity of some resource
 		if quantity.IsZero() {

@@ -10,10 +10,10 @@ metadata:
   {{- end }}
 rules:
   - apiGroups: ["karpenter.sh"]
-    resources: ["provisioners"]
+    resources: ["provisioners", "nodegroups"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["karpenter.sh"]
-    resources: ["provisioners/status"]
+    resources: ["provisioners/status", "nodegroups/status"]
     verbs: ["create", "delete", "patch", "get", "list", "watch"]
   - apiGroups: [""]
     resources: ["persistentvolumes", "persistentvolumeclaims"]

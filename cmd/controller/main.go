@@ -45,6 +45,7 @@ import (
 	metricsnode "github.com/aws/karpenter/pkg/controllers/metrics/node"
 	metricspod "github.com/aws/karpenter/pkg/controllers/metrics/pod"
 	"github.com/aws/karpenter/pkg/controllers/node"
+	"github.com/aws/karpenter/pkg/controllers/nodegroup"
 	"github.com/aws/karpenter/pkg/controllers/persistentvolumeclaim"
 	"github.com/aws/karpenter/pkg/controllers/provisioning"
 	"github.com/aws/karpenter/pkg/controllers/selection"
@@ -92,6 +93,7 @@ func main() {
 
 	if err := manager.RegisterControllers(ctx,
 		provisioningController,
+		nodegroup.NewController(manager.GetClient(), clientSet.CoreV1(), cloudProvider),
 		selection.NewController(manager.GetClient(), provisioningController),
 		persistentvolumeclaim.NewController(manager.GetClient()),
 		termination.NewController(ctx, manager.GetClient(), clientSet.CoreV1(), cloudProvider),
