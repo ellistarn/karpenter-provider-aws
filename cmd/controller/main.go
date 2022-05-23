@@ -21,6 +21,7 @@ import (
 	"github.com/aws/karpenter/pkg/events"
 
 	"github.com/aws/karpenter/pkg/controllers/state"
+	"github.com/aws/karpenter/pkg/utils/globals"
 	"github.com/aws/karpenter/pkg/utils/project"
 
 	"github.com/go-logr/zapr"
@@ -40,7 +41,6 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/aws/karpenter/pkg/apis"
-	"github.com/aws/karpenter/pkg/cloudprovider"
 	cloudprovidermetrics "github.com/aws/karpenter/pkg/cloudprovider/metrics"
 	"github.com/aws/karpenter/pkg/cloudprovider/registry"
 	"github.com/aws/karpenter/pkg/controllers"
@@ -52,12 +52,11 @@ import (
 	"github.com/aws/karpenter/pkg/controllers/provisioning"
 	"github.com/aws/karpenter/pkg/controllers/termination"
 	"github.com/aws/karpenter/pkg/utils/injection"
-	"github.com/aws/karpenter/pkg/utils/options"
 )
 
 var (
 	scheme    = runtime.NewScheme()
-	opts      = options.MustParse()
+	settings  = globals.MustParse()
 	component = "controller"
 )
 
@@ -68,38 +67,41 @@ func init() {
 
 func main() {
 	config := controllerruntime.GetConfigOrDie()
-	config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(opts.KubeClientQPS), opts.KubeClientBurst)
+	config.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(settings.KubeClientQPS), settings.KubeClientBurst)
 	config.UserAgent = "karpenter"
-	clientSet := kubernetes.NewForConfigOrDie(config)
 
 	// Set up logger and watch for changes to log level
-	ctx := LoggingContextOrDie(config, clientSet)
-	ctx = injection.WithConfig(ctx, config)
-	ctx = injection.WithOptions(ctx, opts)
+	ctx := signals.NewContext()
+	ctx = injection.WithRestConfig(ctx, config)
+	ctx = injection.WithKubernetesInterface(ctx, kubernetes.NewForConfigOrDie(config))
+	ctx = InjectLogger(ctx)
+	ctx = injection.WithGlobals(ctx, settings)
+	ctx = injection.WithEventRecorder(ctx, &events.NoOpRecorder{})
 
 	logging.FromContext(ctx).Infof("Initializing with version %s", project.Version)
 	// Set up controller runtime controller
-	var recorder events.Recorder = &events.NoOpRecorder{}
 
-	cloudProvider := registry.NewCloudProvider(ctx, cloudprovider.Options{ClientSet: clientSet})
+	cloudProvider := registry.NewCloudProvider(ctx)
 	cloudProvider = cloudprovidermetrics.Decorate(cloudProvider)
+	ctx = injection.WithCloudProvider(ctx, cloudProvider)
+
 	manager := controllers.NewManagerOrDie(ctx, config, controllerruntime.Options{
 		Logger:                 zapr.NewLogger(logging.FromContext(ctx).Desugar()),
 		LeaderElection:         true,
 		LeaderElectionID:       "karpenter-leader-election",
 		Scheme:                 scheme,
-		MetricsBindAddress:     fmt.Sprintf(":%d", opts.MetricsPort),
-		HealthProbeBindAddress: fmt.Sprintf(":%d", opts.HealthProbePort),
+		MetricsBindAddress:     fmt.Sprintf(":%d", settings.MetricsPort),
+		HealthProbeBindAddress: fmt.Sprintf(":%d", settings.HealthProbePort),
 	})
 
 	cluster := state.NewCluster(ctx, manager.GetClient())
 
 	if err := manager.RegisterControllers(ctx,
-		provisioning.NewController(ctx, manager.GetClient(), clientSet.CoreV1(), recorder, cloudProvider, cluster),
+		provisioning.NewController(ctx),
 		state.NewNodeController(manager.GetClient(), cluster),
 		state.NewPodController(manager.GetClient(), cluster),
 		persistentvolumeclaim.NewController(manager.GetClient()),
-		termination.NewController(ctx, manager.GetClient(), clientSet.CoreV1(), cloudProvider),
+		termination.NewController(ctx),
 		node.NewController(manager.GetClient()),
 		metricspod.NewController(manager.GetClient()),
 		metricsnode.NewController(manager.GetClient()),
@@ -109,14 +111,14 @@ func main() {
 	}
 }
 
-// LoggingContextOrDie injects a logger into the returned context. The logger is
+// InjectLogger injects a logger into the returned context. The logger is
 // configured by the ConfigMap `config-logging` and live updates the level.
-func LoggingContextOrDie(config *rest.Config, clientSet *kubernetes.Clientset) context.Context {
-	ctx, startinformers := knativeinjection.EnableInjectionOrDie(signals.NewContext(), config)
+func InjectLogger(ctx context.Context) context.Context {
+	ctx, startinformers := knativeinjection.EnableInjectionOrDie(ctx, injection.RestConfig(ctx))
 	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, component)
 	ctx = logging.WithLogger(ctx, logger)
 	rest.SetDefaultWarningHandler(&logging.WarningHandler{Logger: logger})
-	cmw := informer.NewInformedWatcher(clientSet, system.Namespace())
+	cmw := informer.NewInformedWatcher(injection.KubernetesInterface(ctx), system.Namespace())
 	sharedmain.WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalf("Failed to watch logging configuration, %s", err)

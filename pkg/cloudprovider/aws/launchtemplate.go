@@ -100,9 +100,9 @@ func (p *LaunchTemplateProvider) Get(ctx context.Context, provider *v1alpha1.AWS
 		return nil, err
 	}
 	resolvedLaunchTemplates, err := p.amiFamily.Resolve(ctx, provider, nodeRequest, &amifamily.Options{
-		ClusterName:             injection.GetOptions(ctx).ClusterName,
-		ClusterEndpoint:         injection.GetOptions(ctx).ClusterEndpoint,
-		AWSENILimitedPodDensity: injection.GetOptions(ctx).AWSENILimitedPodDensity,
+		ClusterName:             injection.Globals(ctx).ClusterName,
+		ClusterEndpoint:         injection.Globals(ctx).ClusterEndpoint,
+		AWSENILimitedPodDensity: injection.Globals(ctx).AWSENILimitedPodDensity,
 		InstanceProfile:         instanceProfile,
 		SecurityGroupsIDs:       securityGroupsIDs,
 		Tags:                    provider.Tags,
@@ -216,7 +216,7 @@ func (p *LaunchTemplateProvider) volumeSize(quantity *resource.Quantity) *int64 
 // hydrateCache queries for existing Launch Templates created by Karpenter for the current cluster and adds to the LT cache.
 // Any error during hydration will result in a panic
 func (p *LaunchTemplateProvider) hydrateCache(ctx context.Context) {
-	queryKey := fmt.Sprintf(launchTemplateNameFormat, injection.GetOptions(ctx).ClusterName, "*")
+	queryKey := fmt.Sprintf(launchTemplateNameFormat, injection.Globals(ctx).ClusterName, "*")
 	p.logger.Debugf("Hydrating the launch template cache with names matching \"%s\"", queryKey)
 	if err := p.ec2api.DescribeLaunchTemplatesPagesWithContext(ctx, &ec2.DescribeLaunchTemplatesInput{
 		Filters: []*ec2.Filter{{Name: aws.String("launch-template-name"), Values: []*string{aws.String(queryKey)}}},
@@ -252,7 +252,7 @@ func (p *LaunchTemplateProvider) getInstanceProfile(ctx context.Context, provide
 	if provider.InstanceProfile != nil {
 		return aws.StringValue(provider.InstanceProfile), nil
 	}
-	defaultProfile := injection.GetOptions(ctx).AWSDefaultInstanceProfile
+	defaultProfile := injection.Globals(ctx).AWSDefaultInstanceProfile
 	if defaultProfile == "" {
 		return "", errors.New("neither spec.provider.instanceProfile nor --aws-default-instance-profile is specified")
 	}

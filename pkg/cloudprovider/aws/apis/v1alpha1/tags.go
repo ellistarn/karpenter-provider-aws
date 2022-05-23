@@ -28,8 +28,8 @@ import (
 
 func MergeTags(ctx context.Context, custom ...map[string]string) (result []*ec2.Tag) {
 	tags := map[string]string{
-		v1alpha5.ProvisionerNameLabelKey: injection.GetNamespacedName(ctx).Name,
-		"Name":                           fmt.Sprintf("%s/%s", v1alpha5.ProvisionerNameLabelKey, injection.GetNamespacedName(ctx).Name),
+		v1alpha5.ProvisionerNameLabelKey: injection.NamespacedName(ctx).Name,
+		"Name":                           fmt.Sprintf("%s/%s", v1alpha5.ProvisionerNameLabelKey, injection.NamespacedName(ctx).Name),
 	}
 	// Custom tags may override defaults (e.g. Name)
 	for _, t := range custom {

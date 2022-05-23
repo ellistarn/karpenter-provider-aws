@@ -38,8 +38,8 @@ import (
 	"github.com/aws/karpenter/pkg/cloudprovider"
 	"github.com/aws/karpenter/pkg/cloudprovider/aws/apis/v1alpha1"
 	"github.com/aws/karpenter/pkg/utils/functional"
+	"github.com/aws/karpenter/pkg/utils/global"
 	"github.com/aws/karpenter/pkg/utils/injection"
-	"github.com/aws/karpenter/pkg/utils/options"
 	"github.com/aws/karpenter/pkg/utils/resources"
 )
 
@@ -128,7 +128,7 @@ func (p *InstanceProvider) launchInstance(ctx context.Context, provider *v1alpha
 		return nil, fmt.Errorf("getting launch template configs, %w", err)
 	}
 	// Create fleet
-	tags := v1alpha1.MergeTags(ctx, provider.Tags, map[string]string{fmt.Sprintf("kubernetes.io/cluster/%s", injection.GetOptions(ctx).ClusterName): "owned"})
+	tags := v1alpha1.MergeTags(ctx, provider.Tags, map[string]string{fmt.Sprintf("kubernetes.io/cluster/%s", injection.Globals(ctx).ClusterName): "owned"})
 	createFleetInput := &ec2.CreateFleetInput{
 		Type:                  aws.String(ec2.FleetTypeInstant),
 		LaunchTemplateConfigs: launchTemplateConfigs,
@@ -245,7 +245,7 @@ func (p *InstanceProvider) getInstance(ctx context.Context, id string) (*ec2.Ins
 		return nil, fmt.Errorf("expected instance but got 0")
 	}
 	instance := describeInstancesOutput.Reservations[0].Instances[0]
-	if injection.GetOptions(ctx).GetAWSNodeNameConvention() == options.ResourceName {
+	if injection.Globals(ctx).GetAWSNodeNameConvention() == global.ResourceName {
 		return instance, nil
 	}
 	if len(aws.StringValue(instance.PrivateDnsName)) == 0 {
@@ -258,7 +258,7 @@ func (p *InstanceProvider) instanceToNode(ctx context.Context, instance *ec2.Ins
 	for _, instanceType := range instanceTypes {
 		if instanceType.Name() == aws.StringValue(instance.InstanceType) {
 			nodeName := strings.ToLower(aws.StringValue(instance.PrivateDnsName))
-			if injection.GetOptions(ctx).GetAWSNodeNameConvention() == options.ResourceName {
+			if injection.Globals(ctx).GetAWSNodeNameConvention() == global.ResourceName {
 				nodeName = aws.StringValue(instance.InstanceId)
 			}
 

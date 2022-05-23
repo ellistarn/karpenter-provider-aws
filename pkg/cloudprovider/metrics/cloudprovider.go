@@ -69,31 +69,31 @@ func Decorate(cloudProvider cloudprovider.CloudProvider) cloudprovider.CloudProv
 }
 
 func (d *decorator) Create(ctx context.Context, nodeRequest *cloudprovider.NodeRequest) (*v1.Node, error) {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "Create", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "Create", d.Name()))()
 	return d.CloudProvider.Create(ctx, nodeRequest)
 }
 
 func (d *decorator) Delete(ctx context.Context, node *v1.Node) error {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "Delete", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "Delete", d.Name()))()
 	return d.CloudProvider.Delete(ctx, node)
 }
 
 func (d *decorator) GetInstanceTypes(ctx context.Context) ([]cloudprovider.InstanceType, error) {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "GetInstanceTypes", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "GetInstanceTypes", d.Name()))()
 	return d.CloudProvider.GetInstanceTypes(ctx)
 }
 
 func (d *decorator) GetRequirements(ctx context.Context, provider *v1alpha5.Provider) (scheduling.Requirements, error) {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "GetInstanceTypes", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "GetInstanceTypes", d.Name()))()
 	return d.CloudProvider.GetRequirements(ctx, provider)
 }
 
 func (d *decorator) Default(ctx context.Context, provisioner *v1alpha5.Provisioner) {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "Default", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "Default", d.Name()))()
 	d.CloudProvider.Default(ctx, provisioner)
 }
 
 func (d *decorator) Validate(ctx context.Context, provisioner *v1alpha5.Provisioner) *apis.FieldError {
-	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.GetControllerName(ctx), "Validate", d.Name()))()
+	defer metrics.Measure(methodDurationHistogramVec.WithLabelValues(injection.ControllerName(ctx), "Validate", d.Name()))()
 	return d.CloudProvider.Validate(ctx, provisioner)
 }

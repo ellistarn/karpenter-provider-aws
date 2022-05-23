@@ -33,8 +33,8 @@ import (
 	"github.com/aws/karpenter/pkg/scheduling"
 	"github.com/aws/karpenter/pkg/test"
 	. "github.com/aws/karpenter/pkg/test/expectations"
+	"github.com/aws/karpenter/pkg/utils/global"
 	"github.com/aws/karpenter/pkg/utils/injection"
-	"github.com/aws/karpenter/pkg/utils/options"
 
 	"github.com/Pallinder/go-randomdata"
 	"github.com/aws/aws-sdk-go/aws"
@@ -52,7 +52,7 @@ import (
 )
 
 var ctx context.Context
-var opts options.Options
+var opts global.Options
 var env *test.Environment
 var launchTemplateCache *cache.Cache
 var securityGroupCache *cache.Cache
@@ -74,15 +74,15 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	env = test.NewEnvironment(ctx, func(e *test.Environment) {
-		opts = options.Options{
+		opts = global.Options{
 			ClusterName:               "test-cluster",
 			ClusterEndpoint:           "https://test-cluster",
-			AWSNodeNameConvention:     string(options.IPName),
+			AWSNodeNameConvention:     string(global.IPName),
 			AWSENILimitedPodDensity:   true,
 			AWSDefaultInstanceProfile: "test-instance-profile",
 		}
 		Expect(opts.Validate()).To(Succeed(), "Failed to validate options")
-		ctx = injection.WithOptions(ctx, opts)
+		ctx = injection.WithGlobals(ctx, opts)
 
 		launchTemplateCache = cache.New(CacheTTL, CacheCleanupInterval)
 		unavailableOfferingsCache = cache.New(UnfulfillableCapacityErrorCacheTTL, CacheCleanupInterval)
@@ -717,7 +717,7 @@ var _ = Describe("Allocation", func() {
 		Context("User Data", func() {
 			It("should not specify --use-max-pods=false when using ENI-based pod density", func() {
 				opts.AWSENILimitedPodDensity = true
-				controller = provisioning.NewController(injection.WithOptions(ctx, opts), env.Client, clientSet.CoreV1(), recorder, cloudProvider, cluster)
+				controller = provisioning.NewController(injection.WithGlobals(ctx, opts))
 				ExpectApplied(ctx, env.Client, test.Provisioner(test.ProvisionerOptions{Provider: provider}))
 				pod := ExpectProvisioned(ctx, env.Client, controller, test.UnschedulablePod())[0]
 				ExpectScheduled(ctx, env.Client, pod)
@@ -728,7 +728,7 @@ var _ = Describe("Allocation", func() {
 			})
 			It("should specify --use-max-pods=false when not using ENI-based pod density", func() {
 				opts.AWSENILimitedPodDensity = false
-				controller = provisioning.NewController(injection.WithOptions(ctx, opts), env.Client, clientSet.CoreV1(), recorder, cloudProvider, cluster)
+				controller = provisioning.NewController(injection.WithGlobals(ctx, opts))
 
 				ExpectApplied(ctx, env.Client, test.Provisioner(test.ProvisionerOptions{Provider: provider}))
 				pod := ExpectProvisioned(ctx, env.Client, controller, test.UnschedulablePod())[0]

@@ -16,67 +16,114 @@ package injection
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/aws/karpenter/pkg/utils/options"
+	"github.com/aws/karpenter/pkg/cloudprovider"
+	"github.com/aws/karpenter/pkg/controllers/state"
+	"github.com/aws/karpenter/pkg/events"
+	"github.com/aws/karpenter/pkg/utils/global"
 )
 
-type resourceKey struct{}
-
-func WithNamespacedName(ctx context.Context, namespacedname types.NamespacedName) context.Context {
-	return context.WithValue(ctx, resourceKey{}, namespacedname)
-}
-
-func GetNamespacedName(ctx context.Context) types.NamespacedName {
-	retval := ctx.Value(resourceKey{})
-	if retval == nil {
-		return types.NamespacedName{}
+func get(ctx context.Context, key interface{}) interface{} {
+	value := ctx.Value(key)
+	if value == nil {
+		panic(fmt.Sprintf("nil value for key %s and context %s", reflect.TypeOf(key), ctx))
 	}
-	return retval.(types.NamespacedName)
+	return value
 }
 
-type optionsKey struct{}
+type cloudProviderKey struct{}
 
-func WithOptions(ctx context.Context, opts options.Options) context.Context {
-	return context.WithValue(ctx, optionsKey{}, opts)
+func WithCloudProvider(ctx context.Context, value cloudprovider.CloudProvider) context.Context {
+	return context.WithValue(ctx, cloudProviderKey{}, value)
 }
 
-func GetOptions(ctx context.Context) options.Options {
-	retval := ctx.Value(optionsKey{})
-	if retval == nil {
-		return options.Options{}
-	}
-	return retval.(options.Options)
+func CloudProvider(ctx context.Context) cloudprovider.CloudProvider {
+	return get(ctx, cloudProviderKey{}).(cloudprovider.CloudProvider)
 }
 
-type configKey struct{}
+type kubeClientKey struct{}
 
-func WithConfig(ctx context.Context, config *rest.Config) context.Context {
-	return context.WithValue(ctx, configKey{}, config)
+func WithKubeClient(ctx context.Context, value client.Client) context.Context {
+	return context.WithValue(ctx, kubeClientKey{}, value)
 }
 
-func GetConfig(ctx context.Context) *rest.Config {
-	retval := ctx.Value(configKey{})
-	if retval == nil {
-		return nil
-	}
-	return retval.(*rest.Config)
+func KubeClient(ctx context.Context) client.Client {
+	return get(ctx, kubeClientKey{}).(client.Client)
 }
 
-type controllerNameKeyType struct{}
+type kubernetesInterfaceKey struct{}
 
-var controllerNameKey = controllerNameKeyType{}
-
-func WithControllerName(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, controllerNameKey, name)
+func WithKubernetesInterface(ctx context.Context, value kubernetes.Interface) context.Context {
+	return context.WithValue(ctx, kubernetesInterfaceKey{}, value)
 }
 
-func GetControllerName(ctx context.Context) string {
-	name := ctx.Value(controllerNameKey)
-	if name == nil {
-		return ""
-	}
-	return name.(string)
+func KubernetesInterface(ctx context.Context) kubernetes.Interface {
+	return get(ctx, kubernetesInterfaceKey{}).(kubernetes.Interface)
+}
+
+type eventRecorderKey struct{}
+
+func WithEventRecorder(ctx context.Context, value events.Recorder) context.Context {
+	return context.WithValue(ctx, eventRecorderKey{}, value)
+}
+
+func EventRecorder(ctx context.Context) events.Recorder {
+	return get(ctx, eventRecorderKey{}).(events.Recorder)
+}
+
+type clusterStateKey struct{}
+
+func WithClusterState(ctx context.Context, value *state.Cluster) context.Context {
+	return context.WithValue(ctx, clusterStateKey{}, value)
+}
+
+func ClusterState(ctx context.Context) *state.Cluster {
+	return get(ctx, clusterStateKey{}).(*state.Cluster)
+}
+
+type namespacedNameKey struct{}
+
+func WithNamespacedName(ctx context.Context, value types.NamespacedName) context.Context {
+	return context.WithValue(ctx, namespacedNameKey{}, value)
+}
+
+func NamespacedName(ctx context.Context) types.NamespacedName {
+	return get(ctx, namespacedNameKey{}).(types.NamespacedName)
+}
+
+type globalsKey struct{}
+
+func WithGlobals(ctx context.Context, value global.Options) context.Context {
+	return context.WithValue(ctx, globalsKey{}, value)
+}
+
+func Globals(ctx context.Context) global.Options {
+	return get(ctx, globalsKey{}).(global.Options)
+}
+
+type restConfigKey struct{}
+
+func WithRestConfig(ctx context.Context, value *rest.Config) context.Context {
+	return context.WithValue(ctx, restConfigKey{}, value)
+}
+
+func RestConfig(ctx context.Context) *rest.Config {
+	return get(ctx, restConfigKey{}).(*rest.Config)
+}
+
+type controllerNameKey struct{}
+
+func WithControllerName(ctx context.Context, value string) context.Context {
+	return context.WithValue(ctx, controllerNameKey{}, value)
+}
+
+func ControllerName(ctx context.Context) string {
+	return get(ctx, controllerNameKey{}).(string)
 }

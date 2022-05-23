@@ -81,7 +81,7 @@ func (p *InstanceTypeProvider) Get(ctx context.Context) ([]cloudprovider.Instanc
 			instanceType.AvailableOfferings = offerings
 			result = append(result, instanceType)
 		}
-		if !injection.GetOptions(ctx).AWSENILimitedPodDensity {
+		if !injection.Globals(ctx).AWSENILimitedPodDensity {
 			instanceType.MaxPods = ptr.Int32(110)
 		}
 	}
