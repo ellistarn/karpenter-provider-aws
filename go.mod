@@ -13,7 +13,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.5.0
 	github.com/onsi/gomega v1.24.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pelletier/go-toml/v2 v2.0.5
+	github.com/pelletier/go-toml/v2 v2.0.7
 	github.com/prometheus/client_golang v1.13.0
 	github.com/samber/lo v1.34.0
 	go.uber.org/multierr v1.8.0
