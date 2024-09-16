@@ -53,7 +53,7 @@ runs:
   using: "composite"
   steps:
   - name: login to ecr via docker
-    uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
+    uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
     with:
       registry: ${{ inputs.account_id }}.dkr.ecr.${{ inputs.region }}.amazonaws.com
       logout: true
@@ -93,7 +93,7 @@ runs:
       CLUSTER_VPC_ID: ${{ env.CLUSTER_VPC_ID }}
       EKS_CLUSTER_SG: ${{ env.EKS_CLUSTER_SG }}
       CLEANUP: ${{ inputs.cleanup }}
-    uses: aws-actions/aws-codebuild-run-build@f59b837dd074776bd06619e7e22fb62161eab324 #v1.0.15
+    uses: aws-actions/aws-codebuild-run-build@287d617e49bf7a4b372293628d53be1fcd9d17f9 #v1.0.15
     with:
       project-name: E2EPrivateClusterCodeBuildProject-us-east-1
       buildspec-override: |
